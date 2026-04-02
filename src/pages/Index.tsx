@@ -18,21 +18,25 @@ import { usePrediction } from "@/hooks/usePrediction";
 import { toast } from "sonner";
 
 const REGIONS = [
-  { value: "global", label: "🌍 Global" },
-  { value: "india", label: "🇮🇳 India" },
-  { value: "usa", label: "🇺🇸 United States" },
-  { value: "brazil", label: "🇧🇷 Brazil" },
-  { value: "uk", label: "🇬🇧 United Kingdom" },
-  { value: "germany", label: "🇩🇪 Germany" },
-  { value: "france", label: "🇫🇷 France" },
-  { value: "italy", label: "🇮🇹 Italy" },
-  { value: "russia", label: "🇷🇺 Russia" },
-  { value: "china", label: "🇨🇳 China" },
+  { value: "India", label: "🇮🇳 India" },
+  { value: "United States", label: "🇺🇸 United States" },
+  { value: "Brazil", label: "🇧🇷 Brazil" },
+  { value: "Germany", label: "🇩🇪 Germany" },
+  { value: "France", label: "🇫🇷 France" },
+  { value: "Italy", label: "🇮🇹 Italy" },
+  { value: "Russia", label: "🇷🇺 Russia" },
+  { value: "China", label: "🇨🇳 China" },
+  { value: "Japan", label: "🇯🇵 Japan" },
+  { value: "Australia", label: "🇦🇺 Australia" },
+  { value: "Canada", label: "🇨🇦 Canada" },
+  { value: "Mexico", label: "🇲🇽 Mexico" },
+  { value: "Spain", label: "🇪🇸 Spain" },
+  { value: "South Africa", label: "🇿🇦 South Africa" },
 ];
 
 const Index = () => {
   const [dayInput, setDayInput] = useState("");
-  const [region, setRegion] = useState("global");
+  const [region, setRegion] = useState("India");
   const {
     prediction, day, region: activeRegion, chartData,
     isLoading, isBatchLoading, error,
