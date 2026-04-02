@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { PredictionDataPoint, generateHistoricalData } from "@/lib/prediction-utils";
 
-const API_BASE = "https://new-epidemic-ai1.onrender.com";
+const API_BASE = "https://new-epidemic-ai-1.onrender.com";
 
 export interface HistoryEntry {
   id: string;
