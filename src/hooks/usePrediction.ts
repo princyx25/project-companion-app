@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { PredictionDataPoint, generateHistoricalData } from "@/lib/prediction-utils";
 
-const API_BASE = "https://penecontemporaneous-blithesomely-joya.ngrok-free.dev";
+const API_BASE = "https://new-epidemic-ai1.onrender.com";
 
 export interface HistoryEntry {
   id: string;
@@ -50,7 +50,6 @@ export function usePrediction() {
 
       const res = await fetch(`${API_BASE}/predict?day=${day}&region=${encodeURIComponent(region)}`, {
         signal: controller.signal,
-        headers: { "ngrok-skip-browser-warning": "true" },
       });
       clearTimeout(timeout);
 
@@ -94,7 +93,6 @@ export function usePrediction() {
         const timeout = setTimeout(() => controller.abort(), 10000);
         const res = await fetch(`${API_BASE}/predict?day=${d}&region=${encodeURIComponent(region)}`, {
           signal: controller.signal,
-          headers: { "ngrok-skip-browser-warning": "true" },
         });
         clearTimeout(timeout);
         if (!res.ok) throw new Error(`API error at day ${d}: ${res.status}`);
