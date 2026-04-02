@@ -6,6 +6,7 @@ const API_BASE = "https://penecontemporaneous-blithesomely-joya.ngrok-free.dev";
 interface PredictionState {
   prediction: number | null;
   day: number | null;
+  region: string | null;
   chartData: PredictionDataPoint[];
   isLoading: boolean;
   error: string | null;
