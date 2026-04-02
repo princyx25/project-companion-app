@@ -17,6 +17,7 @@ export function usePrediction() {
   const [state, setState] = useState<PredictionState>({
     prediction: null,
     day: null,
+    region: null,
     chartData: [],
     isLoading: false,
     error: null,
