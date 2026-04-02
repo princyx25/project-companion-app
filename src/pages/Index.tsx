@@ -3,12 +3,17 @@ import { Activity, Loader2, AlertCircle, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { PredictionCard } from "@/components/PredictionCard";
 import { PredictionChart } from "@/components/PredictionChart";
 import { RiskIndicator } from "@/components/RiskIndicator";
 import { AIInsight } from "@/components/AIInsight";
+import { PredictionHistory } from "@/components/PredictionHistory";
+import { BatchPrediction } from "@/components/BatchPrediction";
+import { WorldMap } from "@/components/WorldMap";
+import { ExportButtons } from "@/components/ExportButtons";
 import { usePrediction } from "@/hooks/usePrediction";
 import { toast } from "sonner";
 
@@ -28,10 +33,23 @@ const REGIONS = [
 const Index = () => {
   const [dayInput, setDayInput] = useState("");
   const [region, setRegion] = useState("global");
-  const { prediction, day, region: activeRegion, chartData, isLoading, error, predict } = usePrediction();
+  const {
+    prediction, day, region: activeRegion, chartData,
+    isLoading, isBatchLoading, error,
+    history, batchData,
+    predict, batchPredict, clearHistory,
+  } = usePrediction();
   const [prevPrediction, setPrevPrediction] = useState<number | undefined>();
 
   const selectedRegionLabel = REGIONS.find((r) => r.value === (activeRegion || region))?.label || "Global";
+
+  // Build map data from history (latest prediction per region)
+  const mapPredictions: Record<string, number> = {};
+  history.forEach((entry) => {
+    if (!mapPredictions[entry.region]) {
+      mapPredictions[entry.region] = entry.prediction;
+    }
+  });
 
   const handlePredict = async () => {
     const num = parseInt(dayInput);
@@ -45,7 +63,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
-      {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
         <div className="container mx-auto flex items-center justify-between px-4 py-4">
           <div className="flex items-center gap-3">
@@ -57,7 +74,10 @@ const Index = () => {
               <p className="text-xs text-muted-foreground">AI-Powered Outbreak Analysis</p>
             </div>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-3">
+            <ExportButtons history={history} batchData={batchData} regions={REGIONS} />
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
@@ -66,9 +86,7 @@ const Index = () => {
         <Card className="border-border/50 bg-card/80 backdrop-blur-sm animate-fade-in">
           <CardContent className="flex flex-col sm:flex-row items-end gap-4 p-6">
             <div className="w-full sm:w-48">
-              <label htmlFor="region" className="text-sm font-medium text-muted-foreground mb-2 block">
-                Region
-              </label>
+              <label className="text-sm font-medium text-muted-foreground mb-2 block">Region</label>
               <Select value={region} onValueChange={setRegion}>
                 <SelectTrigger className="bg-background/50">
                   <SelectValue placeholder="Select region" />
@@ -81,39 +99,24 @@ const Index = () => {
               </Select>
             </div>
             <div className="flex-1 w-full">
-              <label htmlFor="days" className="text-sm font-medium text-muted-foreground mb-2 block">
-                Number of days
-              </label>
+              <label htmlFor="days" className="text-sm font-medium text-muted-foreground mb-2 block">Number of days</label>
               <Input
-                id="days"
-                type="number"
-                min={1}
-                max={1000}
-                placeholder="e.g. 200"
-                value={dayInput}
+                id="days" type="number" min={1} max={1000}
+                placeholder="e.g. 200" value={dayInput}
                 onChange={(e) => setDayInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handlePredict()}
                 className="bg-background/50"
               />
             </div>
             <Button onClick={handlePredict} disabled={isLoading} className="w-full sm:w-auto min-w-[140px]">
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Predicting…
-                </>
-              ) : (
-                "Predict"
-              )}
+              {isLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Predicting…</> : "Predict"}
             </Button>
           </CardContent>
         </Card>
 
-        {/* Error */}
         {error && (
           <div className="flex items-center gap-2 text-destructive text-sm animate-fade-in">
-            <AlertCircle className="h-4 w-4" />
-            {error}
+            <AlertCircle className="h-4 w-4" />{error}
           </div>
         )}
 
@@ -145,6 +148,29 @@ const Index = () => {
             </p>
           </div>
         )}
+
+        {/* Advanced Features Tabs */}
+        <Tabs defaultValue="batch" className="animate-fade-in">
+          <TabsList className="w-full justify-start">
+            <TabsTrigger value="batch">Batch Prediction</TabsTrigger>
+            <TabsTrigger value="map">World Map</TabsTrigger>
+            <TabsTrigger value="history">History</TabsTrigger>
+          </TabsList>
+          <TabsContent value="batch" className="mt-4">
+            <BatchPrediction
+              onBatchPredict={batchPredict}
+              batchData={batchData}
+              isBatchLoading={isBatchLoading}
+              region={region}
+            />
+          </TabsContent>
+          <TabsContent value="map" className="mt-4">
+            <WorldMap predictions={mapPredictions} />
+          </TabsContent>
+          <TabsContent value="history" className="mt-4">
+            <PredictionHistory history={history} onClear={clearHistory} regions={REGIONS} />
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
