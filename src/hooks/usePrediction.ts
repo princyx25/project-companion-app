@@ -50,7 +50,6 @@ export function usePrediction() {
 
       const res = await fetch(`${API_BASE}/predict?day=${day}&region=${encodeURIComponent(region)}`, {
         signal: controller.signal,
-        headers: { "ngrok-skip-browser-warning": "true" },
       });
       clearTimeout(timeout);
 
