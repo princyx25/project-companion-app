@@ -6,6 +6,7 @@ const API_BASE = "https://penecontemporaneous-blithesomely-joya.ngrok-free.dev";
 interface PredictionState {
   prediction: number | null;
   day: number | null;
+  region: string | null;
   chartData: PredictionDataPoint[];
   isLoading: boolean;
   error: string | null;
@@ -16,13 +17,14 @@ export function usePrediction() {
   const [state, setState] = useState<PredictionState>({
     prediction: null,
     day: null,
+    region: null,
     chartData: [],
     isLoading: false,
     error: null,
     history: [],
   });
 
-  const predict = useCallback(async (day: number) => {
+  const predict = useCallback(async (day: number, region: string) => {
     if (!Number.isInteger(day) || day < 1 || day > 1000) {
       setState((s) => ({ ...s, error: "Please enter a valid day (1–1000)." }));
       return;
@@ -34,7 +36,7 @@ export function usePrediction() {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 10000);
 
-      const res = await fetch(`${API_BASE}/predict?day=${day}`, {
+      const res = await fetch(`${API_BASE}/predict?day=${day}&region=${encodeURIComponent(region)}`, {
         signal: controller.signal,
         headers: { "ngrok-skip-browser-warning": "true" },
       });
@@ -51,6 +53,7 @@ export function usePrediction() {
         ...s,
         prediction,
         day,
+        region,
         chartData,
         isLoading: false,
         history: [...s.history.filter((h) => h.day !== day), { day, cases: prediction }].sort((a, b) => a.day - b.day),

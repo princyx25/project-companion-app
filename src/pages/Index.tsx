@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Activity, Loader2, AlertCircle } from "lucide-react";
+import { Activity, Loader2, AlertCircle, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { PredictionCard } from "@/components/PredictionCard";
 import { PredictionChart } from "@/components/PredictionChart";
@@ -11,10 +12,26 @@ import { AIInsight } from "@/components/AIInsight";
 import { usePrediction } from "@/hooks/usePrediction";
 import { toast } from "sonner";
 
+const REGIONS = [
+  { value: "global", label: "🌍 Global" },
+  { value: "india", label: "🇮🇳 India" },
+  { value: "usa", label: "🇺🇸 United States" },
+  { value: "brazil", label: "🇧🇷 Brazil" },
+  { value: "uk", label: "🇬🇧 United Kingdom" },
+  { value: "germany", label: "🇩🇪 Germany" },
+  { value: "france", label: "🇫🇷 France" },
+  { value: "italy", label: "🇮🇹 Italy" },
+  { value: "russia", label: "🇷🇺 Russia" },
+  { value: "china", label: "🇨🇳 China" },
+];
+
 const Index = () => {
   const [dayInput, setDayInput] = useState("");
-  const { prediction, day, chartData, isLoading, error, history, predict } = usePrediction();
+  const [region, setRegion] = useState("global");
+  const { prediction, day, region: activeRegion, chartData, isLoading, error, predict } = usePrediction();
   const [prevPrediction, setPrevPrediction] = useState<number | undefined>();
+
+  const selectedRegionLabel = REGIONS.find((r) => r.value === (activeRegion || region))?.label || "Global";
 
   const handlePredict = async () => {
     const num = parseInt(dayInput);
@@ -23,7 +40,7 @@ const Index = () => {
       return;
     }
     if (prediction !== null) setPrevPrediction(prediction);
-    await predict(num);
+    await predict(num, region);
   };
 
   return (
@@ -48,9 +65,24 @@ const Index = () => {
         {/* Input Section */}
         <Card className="border-border/50 bg-card/80 backdrop-blur-sm animate-fade-in">
           <CardContent className="flex flex-col sm:flex-row items-end gap-4 p-6">
+            <div className="w-full sm:w-48">
+              <label htmlFor="region" className="text-sm font-medium text-muted-foreground mb-2 block">
+                Region
+              </label>
+              <Select value={region} onValueChange={setRegion}>
+                <SelectTrigger className="bg-background/50">
+                  <SelectValue placeholder="Select region" />
+                </SelectTrigger>
+                <SelectContent>
+                  {REGIONS.map((r) => (
+                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex-1 w-full">
               <label htmlFor="days" className="text-sm font-medium text-muted-foreground mb-2 block">
-                Enter number of days
+                Number of days
               </label>
               <Input
                 id="days"
@@ -88,6 +120,10 @@ const Index = () => {
         {/* Results */}
         {prediction !== null && day !== null && (
           <div className="space-y-8 animate-fade-in">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <MapPin className="h-4 w-4" />
+              <span>Showing predictions for <span className="font-semibold text-foreground">{selectedRegionLabel}</span></span>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <PredictionCard prediction={prediction} day={day} previousPrediction={prevPrediction} />
               <RiskIndicator prediction={prediction} />
