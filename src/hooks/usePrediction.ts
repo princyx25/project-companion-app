@@ -107,7 +107,7 @@ export function usePrediction() {
     try {
       for (let d = startDay; d <= endDay; d += step) {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15000);
+        const timeout = setTimeout(() => controller.abort(), 60000);
         const res = await fetch(`${API_BASE}/predict?day=${d}&region=${encodeURIComponent(region)}`, {
           signal: controller.signal,
         });
