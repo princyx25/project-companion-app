@@ -14,7 +14,7 @@ import { PredictionHistory } from "@/components/PredictionHistory";
 import { BatchPrediction } from "@/components/BatchPrediction";
 import { WorldMap } from "@/components/WorldMap";
 import { ExportButtons } from "@/components/ExportButtons";
-import { usePrediction } from "@/hooks/usePrediction";
+import { usePrediction, PredictionResult } from "@/hooks/usePrediction";
 import { toast } from "sonner";
 
 const REGIONS = [
@@ -38,20 +38,19 @@ const Index = () => {
   const [dayInput, setDayInput] = useState("");
   const [region, setRegion] = useState("India");
   const {
-    prediction, day, region: activeRegion, chartData,
+    result, day, region: activeRegion, chartData,
     isLoading, isBatchLoading, error,
     history, batchData,
     predict, batchPredict, clearHistory,
   } = usePrediction();
-  const [prevPrediction, setPrevPrediction] = useState<number | undefined>();
 
   const selectedRegionLabel = REGIONS.find((r) => r.value === (activeRegion || region))?.label || "Global";
 
-  // Build map data from history (latest prediction per region)
-  const mapPredictions: Record<string, number> = {};
+  // Build map data from history (latest prediction result per region)
+  const mapPredictions: Record<string, PredictionResult> = {};
   history.forEach((entry) => {
     if (!mapPredictions[entry.region]) {
-      mapPredictions[entry.region] = entry.prediction;
+      mapPredictions[entry.region] = entry.result;
     }
   });
 
@@ -61,7 +60,6 @@ const Index = () => {
       toast.error("Please enter a valid number of days (1–1000).");
       return;
     }
-    if (prediction !== null) setPrevPrediction(prediction);
     await predict(num, region);
   };
 
@@ -125,23 +123,27 @@ const Index = () => {
         )}
 
         {/* Results */}
-        {prediction !== null && day !== null && (
+        {result !== null && day !== null && (
           <div className="space-y-8 animate-fade-in">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <MapPin className="h-4 w-4" />
               <span>Showing predictions for <span className="font-semibold text-foreground">{selectedRegionLabel}</span></span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <PredictionCard prediction={prediction} day={day} previousPrediction={prevPrediction} />
-              <RiskIndicator prediction={prediction} />
-              <AIInsight prediction={prediction} day={day} />
+              <div className="md:col-span-2">
+                <PredictionCard result={result} day={day} />
+              </div>
+              <div className="space-y-6">
+                <RiskIndicator risk={result.risk} prediction={result.prediction} />
+                <AIInsight risk={result.risk} prediction={result.prediction} day={day} />
+              </div>
             </div>
             <PredictionChart data={chartData} />
           </div>
         )}
 
         {/* Empty State */}
-        {prediction === null && !isLoading && (
+        {result === null && !isLoading && (
           <div className="flex flex-col items-center justify-center py-20 text-center animate-fade-in">
             <div className="rounded-full bg-muted p-6 mb-4">
               <Activity className="h-10 w-10 text-muted-foreground" />

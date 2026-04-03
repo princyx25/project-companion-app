@@ -1,7 +1,8 @@
-import { classifyRisk, getRiskColor, getRiskLabel, type RiskLevel } from "@/lib/prediction-utils";
+import { getRiskColor, getRiskLabel, type RiskLevel } from "@/lib/prediction-utils";
 import { Shield, ShieldAlert, ShieldCheck } from "lucide-react";
 
 interface RiskIndicatorProps {
+  risk: string;
   prediction: number;
 }
 
@@ -11,11 +12,11 @@ const icons: Record<RiskLevel, React.ElementType> = {
   high: ShieldAlert,
 };
 
-export function RiskIndicator({ prediction }: RiskIndicatorProps) {
-  const risk = classifyRisk(prediction);
+export function RiskIndicator({ risk: apiRisk, prediction }: RiskIndicatorProps) {
+  const risk = apiRisk.toLowerCase() as RiskLevel;
   const colors = getRiskColor(risk);
   const label = getRiskLabel(risk);
-  const Icon = icons[risk];
+  const Icon = icons[risk] || Shield;
 
   return (
     <div className={`flex flex-col items-center gap-3 rounded-xl border p-6 ${colors.bg} ${colors.border} animate-scale-in`}>
@@ -30,7 +31,7 @@ export function RiskIndicator({ prediction }: RiskIndicatorProps) {
           {risk === "high" && "Immediate action needed"}
         </p>
       </div>
-      <div className={`h-2 w-full rounded-full bg-muted overflow-hidden`}>
+      <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-1000 ${colors.dot}`}
           style={{ width: risk === "low" ? "25%" : risk === "medium" ? "60%" : "95%" }}

@@ -1,14 +1,15 @@
-import { classifyRisk, getAIInsight } from "@/lib/prediction-utils";
+import { getAIInsight, type RiskLevel } from "@/lib/prediction-utils";
 import { BrainCircuit } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface AIInsightProps {
+  risk: string;
   prediction: number;
   day: number;
 }
 
-export function AIInsight({ prediction, day }: AIInsightProps) {
-  const risk = classifyRisk(prediction);
+export function AIInsight({ risk: apiRisk, prediction, day }: AIInsightProps) {
+  const risk = apiRisk.toLowerCase() as RiskLevel;
   const insight = getAIInsight(risk, prediction, day);
 
   return (
