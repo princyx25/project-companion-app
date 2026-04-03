@@ -2,6 +2,8 @@ import { useState, useCallback } from "react";
 import { PredictionDataPoint, generateHistoricalData } from "@/lib/prediction-utils";
 
 const API_BASE = "https://new-epidemic-ai-1.onrender.com";
+const REQUEST_TIMEOUT_MS = 120000;
+const RETRY_DELAY_MS = 1500;
 
 export interface PredictionResult {
   country: string;
@@ -32,6 +34,43 @@ interface PredictionState {
   batchData: PredictionDataPoint[];
 }
 
+async function fetchPrediction(day: number, region: string, retries = 1) {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    try {
+      const res = await fetch(`${API_BASE}/predict?day=${day}&region=${encodeURIComponent(region)}`, {
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        throw new Error(`API error: ${res.status}`);
+      }
+
+      return await res.json();
+    } catch (err) {
+      lastError = err;
+
+      const isAbort = err instanceof DOMException && err.name === "AbortError";
+      const isNetworkError = err instanceof TypeError;
+      const shouldRetry = attempt < retries && (isAbort || isNetworkError);
+
+      if (!shouldRetry) {
+        throw err;
+      }
+
+      await new Promise((resolve) => window.setTimeout(resolve, RETRY_DELAY_MS));
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error("Failed to fetch prediction.");
+}
+
 export function usePrediction() {
   const [state, setState] = useState<PredictionState>({
     result: null,
@@ -54,17 +93,7 @@ export function usePrediction() {
     setState((s) => ({ ...s, isLoading: true, error: null }));
 
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 60000);
-
-      const res = await fetch(`${API_BASE}/predict?day=${day}&region=${encodeURIComponent(region)}`, {
-        signal: controller.signal,
-      });
-      clearTimeout(timeout);
-
-      if (!res.ok) throw new Error(`API error: ${res.status}`);
-
-      const data = await res.json();
+      const data = await fetchPrediction(day, region, 1);
       const result: PredictionResult = {
         country: data.country,
         current_cases: data.current_cases,
@@ -95,7 +124,9 @@ export function usePrediction() {
         history: [entry, ...s.history].slice(0, 50),
       }));
     } catch (err: any) {
-      const message = err.name === "AbortError" ? "Request timed out." : err.message || "Failed to fetch prediction.";
+      const message = err?.name === "AbortError"
+        ? "The prediction server is taking too long to respond. Please try again in a moment."
+        : err?.message || "Failed to fetch prediction.";
       setState((s) => ({ ...s, isLoading: false, error: message }));
     }
   }, []);
@@ -106,19 +137,14 @@ export function usePrediction() {
     const results: PredictionDataPoint[] = [];
     try {
       for (let d = startDay; d <= endDay; d += step) {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 60000);
-        const res = await fetch(`${API_BASE}/predict?day=${d}&region=${encodeURIComponent(region)}`, {
-          signal: controller.signal,
-        });
-        clearTimeout(timeout);
-        if (!res.ok) throw new Error(`API error at day ${d}: ${res.status}`);
-        const data = await res.json();
+        const data = await fetchPrediction(d, region, 0);
         results.push({ day: d, cases: data.prediction });
       }
       setState((s) => ({ ...s, isBatchLoading: false, batchData: results }));
     } catch (err: any) {
-      const message = err.name === "AbortError" ? "Batch request timed out." : err.message || "Batch prediction failed.";
+      const message = err?.name === "AbortError"
+        ? "Batch prediction is taking too long. Please try a smaller range or retry in a moment."
+        : err?.message || "Batch prediction failed.";
       setState((s) => ({ ...s, isBatchLoading: false, error: message, batchData: results }));
     }
   }, []);
