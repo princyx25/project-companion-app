@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Download, FileText } from "lucide-react";
 import { HistoryEntry } from "@/hooks/usePrediction";
-import { PredictionDataPoint, classifyRisk, getRiskLabel, formatNumber } from "@/lib/prediction-utils";
+import { PredictionDataPoint, formatNumber, getRiskLabel, type RiskLevel } from "@/lib/prediction-utils";
 import { toast } from "sonner";
 
 interface ExportButtonsProps {
@@ -29,9 +29,9 @@ export function ExportButtons({ history, batchData, regions }: ExportButtonsProp
       toast.error("No history to export.");
       return;
     }
-    const header = "Timestamp,Region,Day,Predicted Cases,Risk Level\n";
+    const header = "Timestamp,Region,Day,Current Cases,Predicted Cases,Increase,Growth %,Risk Level\n";
     const rows = history.map((e) =>
-      `${e.timestamp.toISOString()},${getRegionLabel(e.region)},${e.day},${Math.round(e.prediction)},${getRiskLabel(classifyRisk(e.prediction))}`
+      `${e.timestamp.toISOString()},${getRegionLabel(e.region)},${e.day},${Math.round(e.result.current_cases)},${Math.round(e.result.prediction)},${Math.round(e.result.increase)},${e.result.growth_percent.toFixed(1)},${e.result.risk}`
     ).join("\n");
     downloadCSV(`prediction-history-${Date.now()}.csv`, header + rows);
   };
@@ -41,10 +41,8 @@ export function ExportButtons({ history, batchData, regions }: ExportButtonsProp
       toast.error("No batch data to export.");
       return;
     }
-    const header = "Day,Predicted Cases,Risk Level\n";
-    const rows = batchData.map((d) =>
-      `${d.day},${Math.round(d.cases)},${getRiskLabel(classifyRisk(d.cases))}`
-    ).join("\n");
+    const header = "Day,Predicted Cases\n";
+    const rows = batchData.map((d) => `${d.day},${Math.round(d.cases)}`).join("\n");
     downloadCSV(`batch-prediction-${Date.now()}.csv`, header + rows);
   };
 
@@ -62,8 +60,7 @@ export function ExportButtons({ history, batchData, regions }: ExportButtonsProp
       report += "PREDICTION HISTORY\n";
       report += "-".repeat(30) + "\n";
       history.forEach((e) => {
-        const risk = classifyRisk(e.prediction);
-        report += `[${e.timestamp.toLocaleTimeString()}] ${getRegionLabel(e.region)} | Day ${e.day} | ${formatNumber(e.prediction)} cases | ${getRiskLabel(risk)}\n`;
+        report += `[${e.timestamp.toLocaleTimeString()}] ${getRegionLabel(e.region)} | Day ${e.day} | Current: ${formatNumber(e.result.current_cases)} | Predicted: ${formatNumber(e.result.prediction)} | +${formatNumber(e.result.increase)} (${e.result.growth_percent.toFixed(1)}%) | ${e.result.risk}\n`;
       });
       report += "\n";
     }
@@ -72,7 +69,7 @@ export function ExportButtons({ history, batchData, regions }: ExportButtonsProp
       report += "BATCH PREDICTION DATA\n";
       report += "-".repeat(30) + "\n";
       batchData.forEach((d) => {
-        report += `Day ${d.day}: ${formatNumber(d.cases)} cases (${getRiskLabel(classifyRisk(d.cases))})\n`;
+        report += `Day ${d.day}: ${formatNumber(d.cases)} cases\n`;
       });
     }
 

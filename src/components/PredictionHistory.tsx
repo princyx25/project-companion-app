@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { History, Trash2 } from "lucide-react";
 import { HistoryEntry } from "@/hooks/usePrediction";
-import { classifyRisk, formatNumber, getRiskColor, getRiskLabel } from "@/lib/prediction-utils";
+import { formatNumber, getRiskColor, getRiskLabel, type RiskLevel } from "@/lib/prediction-utils";
 
 interface PredictionHistoryProps {
   history: HistoryEntry[];
@@ -36,13 +36,15 @@ export function PredictionHistory({ history, onClear, regions }: PredictionHisto
                 <TableHead>Time</TableHead>
                 <TableHead>Region</TableHead>
                 <TableHead className="text-right">Day</TableHead>
-                <TableHead className="text-right">Predicted Cases</TableHead>
+                <TableHead className="text-right">Current</TableHead>
+                <TableHead className="text-right">Predicted</TableHead>
+                <TableHead className="text-right">Growth</TableHead>
                 <TableHead>Risk</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {history.map((entry) => {
-                const risk = classifyRisk(entry.prediction);
+                const risk = (entry.result.risk || "low").toLowerCase() as RiskLevel;
                 const colors = getRiskColor(risk);
                 return (
                   <TableRow key={entry.id}>
@@ -51,7 +53,9 @@ export function PredictionHistory({ history, onClear, regions }: PredictionHisto
                     </TableCell>
                     <TableCell className="text-sm">{getRegionLabel(entry.region)}</TableCell>
                     <TableCell className="text-right font-medium">{entry.day}</TableCell>
-                    <TableCell className="text-right font-mono">{formatNumber(entry.prediction)}</TableCell>
+                    <TableCell className="text-right font-mono">{formatNumber(entry.result.current_cases)}</TableCell>
+                    <TableCell className="text-right font-mono">{formatNumber(entry.result.prediction)}</TableCell>
+                    <TableCell className="text-right font-mono">{entry.result.growth_percent.toFixed(1)}%</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={`${colors.text} ${colors.border} ${colors.bg} text-xs`}>
                         {getRiskLabel(risk)}

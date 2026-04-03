@@ -3,16 +3,25 @@ import { PredictionDataPoint, generateHistoricalData } from "@/lib/prediction-ut
 
 const API_BASE = "https://new-epidemic-ai-1.onrender.com";
 
+export interface PredictionResult {
+  country: string;
+  current_cases: number;
+  prediction: number;
+  increase: number;
+  growth_percent: number;
+  risk: string;
+}
+
 export interface HistoryEntry {
   id: string;
   day: number;
   region: string;
-  prediction: number;
+  result: PredictionResult;
   timestamp: Date;
 }
 
 interface PredictionState {
-  prediction: number | null;
+  result: PredictionResult | null;
   day: number | null;
   region: string | null;
   chartData: PredictionDataPoint[];
@@ -25,7 +34,7 @@ interface PredictionState {
 
 export function usePrediction() {
   const [state, setState] = useState<PredictionState>({
-    prediction: null,
+    result: null,
     day: null,
     region: null,
     chartData: [],
@@ -46,7 +55,7 @@ export function usePrediction() {
 
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10000);
+      const timeout = setTimeout(() => controller.abort(), 15000);
 
       const res = await fetch(`${API_BASE}/predict?day=${day}&region=${encodeURIComponent(region)}`, {
         signal: controller.signal,
@@ -56,21 +65,29 @@ export function usePrediction() {
       if (!res.ok) throw new Error(`API error: ${res.status}`);
 
       const data = await res.json();
-      const prediction = data.prediction as number;
-      const historical = generateHistoricalData(day, prediction);
-      const chartData = [...historical, { day, cases: prediction }];
+      const result: PredictionResult = {
+        country: data.country,
+        current_cases: data.current_cases,
+        prediction: data.prediction,
+        increase: data.increase,
+        growth_percent: data.growth_percent,
+        risk: data.risk,
+      };
+
+      const historical = generateHistoricalData(day, result.prediction);
+      const chartData = [...historical, { day, cases: result.prediction }];
 
       const entry: HistoryEntry = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         day,
         region,
-        prediction,
+        result,
         timestamp: new Date(),
       };
 
       setState((s) => ({
         ...s,
-        prediction,
+        result,
         day,
         region,
         chartData,
@@ -90,7 +107,7 @@ export function usePrediction() {
     try {
       for (let d = startDay; d <= endDay; d += step) {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 10000);
+        const timeout = setTimeout(() => controller.abort(), 15000);
         const res = await fetch(`${API_BASE}/predict?day=${d}&region=${encodeURIComponent(region)}`, {
           signal: controller.signal,
         });
